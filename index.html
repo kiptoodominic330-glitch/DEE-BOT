@@ -3,197 +3,158 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>DEE BOT</title>
+<title>DEE BOT - Deriv Trading Bot</title>
 <style>
-  *{margin:0;padding:0;box-sizing:border-box;font-family:'Segoe UI',Arial,sans-serif}
-  body{background:#0f172a;color:white;padding:15px}
-  .container{max-width:900px;margin:0 auto}
-  .header{text-align:center;padding:20px;background:linear-gradient(135deg,#7c3aed,#db2777);border-radius:15px;margin-bottom:15px}
-  .header h1{font-size:28px;letter-spacing:1px}
-  .header p{opacity:0.9;margin-top:5px;font-size:14px}
-  .card{background:#1e293b;padding:18px;border-radius:12px;margin-bottom:15px;border:1px solid #334155}
-  .card h2{font-size:16px;margin-bottom:12px;color:#c4b5fd}
-  label{display:block;font-size:13px;margin:10px 0 5px;color:#cbd5e1}
-  input,select{width:100%;padding:12px;border-radius:8px;border:1px solid #475569;background:#0f172a;color:white;font-size:14px;outline:none}
-  input:focus{border-color:#a855f7}
-  .row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-  .btn{width:100%;padding:14px;border:none;border-radius:10px;background:linear-gradient(90deg,#7c3aed,#db2777);color:white;font-size:16px;font-weight:bold;cursor:pointer;margin-top:15px}
-  .btn:hover{opacity:0.9}
-  .btn-small{padding:10px;font-size:13px;margin-top:8px;background:#334155}
-  .status{text-align:center;padding:12px;border-radius:10px;background:#0f172a;border:1px solid #334155;margin-bottom:15px;font-size:14px}
-  .status b{color:#facc15}
-  .grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:15px}
-  .box{background:#1e293b;padding:15px;border-radius:12px;text-align:center;border:1px solid #334155}
-  .box small{color:#94a3b8;font-size:12px}
-  .box div{font-size:22px;font-weight:bold;margin-top:5px}
-  .green{color:#22c55e}.red{color:#ef4444}.yellow{color:#facc15}.purple{color:#c084fc}
-  .digits{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin:10px 0}
-  .digit{width:42px;height:42px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:bold;background:#334155;font-size:16px}
-  .digit.hot{background:#22c55e;color:white}
-  .digit.cold{background:#ef4444;color:white}
-  .log{background:#020617;padding:12px;border-radius:10px;height:180px;overflow-y:auto;font-family:monospace;font-size:12px;line-height:1.6}
-  .footer{text-align:center;font-size:12px;color:#64748b;margin-top:10px}
-  .help{font-size:12px;color:#94a3b8;margin-top:6px;line-height:1.5}
+* { margin:0; padding:0; box-sizing:border-box; font-family: 'Segoe UI', sans-serif; }
+body { background: #0f0f1a; color: #fff; padding: 20px; }
+.container { max-width: 900px; margin: auto; }
+h1 { text-align:center; color:#ff2d78; margin-bottom: 5px; }
+.subtitle { text-align:center; color:#aaa; margin-bottom: 20px; }
+.card { background:#1a1a2e; border-radius:12px; padding:20px; margin-bottom:20px; border:1px solid #2a2a4a; }
+label { display:block; margin:10px 0 5px; color:#ccc; font-size:14px; }
+input, select { width:100%; padding:12px; border-radius:8px; border:1px solid #333; background:#0f0f1a; color:#fff; font-size:14px; }
+button { width:100%; padding:14px; border:none; border-radius:8px; background:#ff2d78; color:#fff; font-size:16px; font-weight:bold; cursor:pointer; margin-top:15px; }
+button:hover { background:#ff4d8f; }
+button:disabled { background:#555; cursor:not-allowed; }
+#status { text-align:center; padding:10px; border-radius:8px; margin:10px 0; font-weight:bold; }
+.connected { background:#0f5132; color:#75ffb0; }
+.disconnected { background:#5c1a1a; color:#ff8a8a; }
+#log { background:#000; padding:15px; border-radius:8px; height:250px; overflow-y:auto; font-family:monospace; font-size:12px; color:#0f0; white-space:pre-wrap; }
+.price { font-size:28px; text-align:center; color:#00e5ff; margin:10px 0; }
+.grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+@media(max-width:600px){ .grid{ grid-template-columns:1fr; } }
 </style>
 </head>
 <body>
 <div class="container">
-  <div class="header">
-    <h1>🤖 DEE BOT</h1>
-    <p>DEE BOT - Personal Analyzer | Volatility 100 (1s) Index</p>
-  </div>
-  <div class="status" id="status">Status: <b>Not Connected</b> | Balance: <b id="balance">-</b></div>
-  <div class="card">
-    <h2>⚙️ Setup - Deriv Login</h2>
-    <label>Deriv App ID</label>
-    <input type="text" id="appid" value="353YmLl4HQoUW151xZbsE" placeholder="Paste your App ID here">
-    <div class="help">Your App ID is already filled. Get it at <b>developers.deriv.com</b></div>
-    <label>Deriv API Token (Use DEMO first)</label>
-    <input type="password" id="token" placeholder="Paste Your Deriv API Token Here">
-    <div class="help">Go to <b>deriv.com</b> > Login > <b>Settings > API Token</b> > Create token with <b>Read + Trade</b> > Copy it here. Never share this token.</div>
-    <div class="row">
-      <div>
-        <label>Volatility</label>
-        <select id="symbol">
-          <option value="R_100">Volatility 100 (1s) Index</option>
-          <option value="R_75">Volatility 75 (1s) Index</option>
-          <option value="R_50">Volatility 50 (1s) Index</option>
-          <option value="R_25">Volatility 25 (1s) Index</option>
-          <option value="R_10">Volatility 10 (1s) Index</option>
-        </select>
-      </div>
-      <div>
-        <label>Strategy</label>
-        <select id="strategy">
-          <option value="MATCHES">MATCHES</option>
-          <option value="DIFFERS">DIFFERS</option>
-          <option value="OVER">OVER</option>
-          <option value="UNDER">UNDER</option>
-          <option value="EVEN">EVEN</option>
-          <option value="ODD">ODD</option>
-        </select>
-      </div>
-    </div>
-    <div class="row">
-      <div>
-        <label>Stake (USD)</label>
-        <input type="number" id="stake" value="0.35" step="0.01">
-      </div>
-      <div>
-        <label>Barrier / Prediction (0-9)</label>
-        <input type="number" id="barrier" placeholder="e.g. 5" min="0" max="9">
-      </div>
-    </div>
-    <button class="btn" onclick="connect()">CONNECT & START ANALYSIS</button>
-    <button class="btn btn-small" onclick="clearToken()">Clear Saved Token</button>
-  </div>
-  <div class="grid">
-    <div class="box"><small>Last Price</small><div id="price" class="yellow">-</div></div>
-    <div class="box"><small>Last Digit</small><div id="lastDigit" class="purple">-</div></div>
-    <div class="box"><small>Total Ticks</small><div id="tickCount">0</div></div>
-  </div>
-  <div class="card">
-    <h2>📊 Last Digit Analysis (Last 100 Ticks)</h2>
-    <div class="digits" id="digits"></div>
-    <p style="font-size:13px;color:#cbd5e1;text-align:center" id="analysis">Waiting for ticks...</p>
-    <p style="font-size:13px;text-align:center;margin-top:8px" id="suggestion"></p>
-  </div>
-  <div class="card">
-    <h2>📜 Live Log</h2>
-    <div class="log" id="log"></div>
-  </div>
-  <div class="footer">DEE BOT • Made for you • Always test on DEMO first • Trading involves risk</div>
+<h1>DEE BOT</h1>
+<p class="subtitle">Deriv Trading Bot - Live Analysis</p>
+
+<div class="card">
+<label>App ID</label>
+<input type="text" id="appId" value="353YmLl4HQoUW151xZbsE" placeholder="Enter App ID">
+<label>API Token</label>
+<input type="password" id="token" placeholder="Paste your Deriv API token">
+<div class="grid">
+<div>
+<label>Symbol</label>
+<select id="symbol">
+<option value="R_100">Volatility 100 Index</option>
+<option value="R_75">Volatility 75 Index</option>
+<option value="R_50">Volatility 50 Index</option>
+<option value="R_25">Volatility 25 Index</option>
+<option value="R_10">Volatility 10 Index</option>
+<option value="1HZ100V">Volatility 100 (1s)</option>
+<option value="1HZ75V">Volatility 75 (1s)</option>
+</select>
 </div>
+<div>
+<label>Stake ($)</label>
+<input type="number" id="stake" value="1" step="0.1" min="0.35">
+</div>
+</div>
+<button id="connectBtn" onclick="connect()">CONNECT & START ANALYSIS</button>
+<div id="status" class="disconnected">● Disconnected</div>
+<div class="price" id="price">--</div>
+</div>
+
+<div class="card">
+<label>Live Log</label>
+<div id="log">Waiting to connect...\n</div>
+</div>
+</div>
+
 <script>
-let ws, ticks = [], counts = Array(10).fill(0);
-window.onload = () => {
-  const saved = localStorage.getItem('dee_token');
-  if(saved){ document.getElementById('token').value = saved; log('Saved token loaded. Click CONNECT to start.'); }
-  const savedApp = localStorage.getItem('dee_appid');
-  if(savedApp){ document.getElementById('appid').value = savedApp; }
-};
+let ws = null;
+let isConnected = false;
+
 function log(msg){
   const el = document.getElementById('log');
-  const d = document.createElement('div');
-  d.textContent = new Date().toLocaleTimeString() + ' - ' + msg;
-  el.prepend(d);
+  const time = new Date().toLocaleTimeString();
+  el.textContent += `[${time}] ${msg}\n`;
+  el.scrollTop = el.scrollHeight;
+  console.log(msg);
 }
-function clearToken(){
-  localStorage.removeItem('dee_token');
-  document.getElementById('token').value = '';
-  log('Saved token cleared.');
+
+function setStatus(connected, text){
+  const el = document.getElementById('status');
+  el.textContent = text;
+  el.className = connected ? 'connected' : 'disconnected';
+  document.getElementById('connectBtn').disabled = connected;
 }
+
 function connect(){
+  const appId = document.getElementById('appId').value.trim();
   const token = document.getElementById('token').value.trim();
-  const appId = document.getElementById('appid').value.trim();
   const symbol = document.getElementById('symbol').value;
-  if(!token){ alert('Please paste your Deriv API Token first'); return; }
-  if(!appId){ alert('Please paste your App ID first'); return; }
-  localStorage.setItem('dee_token', token);
-  localStorage.setItem('dee_appid', appId);
-  if(ws) ws.close();
-  log('Connecting to Deriv with App ID: ' + appId);
-  ws = new WebSocket('wss://ws.derivws.com/websockets/v3?app_id=' + appId);
-  ws.onopen = () => { log('Connected to Deriv... Authorizing...'); ws.send(JSON.stringify({authorize: token})); };
+
+  if(!appId){ log('❌ Please enter App ID'); return; }
+  if(!token){ log('❌ Please enter API Token'); return; }
+
+  log(`Connecting to Deriv with App ID: ${appId}`);
+  setStatus(false, '● Connecting...');
+
+  // FIXED: Using binaryws endpoint to avoid 520 error
+  ws = new WebSocket(`wss://ws.binaryws.com/websockets/v3?app_id=${appId}`);
+
+  ws.onopen = () => {
+    log('✅ WebSocket connected! Authorizing...');
+    ws.send(JSON.stringify({ authorize: token }));
+  };
+
   ws.onmessage = (msg) => {
     const data = JSON.parse(msg.data);
-    if(data.error){ log('Error: ' + data.error.message); document.getElementById('status').innerHTML = 'Status: <b style="color:#ef4444">Error - Check Token / App ID</b>'; return; }
-    if(data.authorize){
-      document.getElementById('status').innerHTML = 'Status: <b style="color:#22c55e">✅ Connected - Live</b> | Balance: <b>' + data.authorize.balance + ' ' + data.authorize.currency + '</b>';
-      log('Authorized as: ' + data.authorize.loginid + ' | Balance: ' + data.authorize.balance);
-      ws.send(JSON.stringify({ticks: symbol, subscribe: 1}));
-      ws.send(JSON.stringify({balance: 1, subscribe: 1}));
+
+    if(data.error){
+      log(`❌ Error: ${data.error.message} (code: ${data.error.code})`);
+      setStatus(false, '● Error - Check Token');
+      return;
     }
-    if(data.balance){ document.getElementById('balance').textContent = data.balance.balance + ' ' + data.balance.currency; }
-    if(data.tick){ handleTick(data.tick.quote); }
+
+    if(data.msg_type === 'authorize'){
+      log(`✅ Authorized! Account: ${data.authorize.loginid} | Balance: ${data.authorize.balance} ${data.authorize.currency}`);
+      setStatus(true, '● Connected - Live');
+      isConnected = true;
+      // Subscribe to ticks
+      ws.send(JSON.stringify({ ticks: symbol, subscribe: 1 }));
+      log(`📈 Subscribed to ${symbol}`);
+    }
+
+    if(data.msg_type === 'tick'){
+      const price = data.tick.quote;
+      document.getElementById('price').textContent = price;
+      log(`💹 ${symbol}: ${price}`);
+    }
   };
-  ws.onerror = () => log('Connection error - check internet / App ID');
-  ws.onclose = () => log('Connection closed');
+
+  ws.onerror = (e) => {
+    log('❌ Connection error - check internet / App ID');
+    console.error('WebSocket error:', e);
+    setStatus(false, '● Connection Error');
+  };
+
+  ws.onclose = (e) => {
+    log(`⚠️ Connection closed (code: ${e.code})`);
+    setStatus(false, '● Disconnected');
+    isConnected = false;
+  };
 }
-function handleTick(price){
-  const priceStr = price.toString();
-  const lastDigit = parseInt(priceStr[priceStr.length-1]);
-  if(isNaN(lastDigit)) return;
-  document.getElementById('price').textContent = price;
-  document.getElementById('lastDigit').textContent = lastDigit;
-  ticks.push(lastDigit);
-  if(ticks.length > 100) ticks.shift();
-  document.getElementById('tickCount').textContent = ticks.length;
-  counts = Array(10).fill(0);
-  ticks.forEach(d => counts[d]++);
-  updateDigits();
-}
-function updateDigits(){
-  const box = document.getElementById('digits');
-  box.innerHTML = '';
-  let max = Math.max(...counts);
-  let min = Math.min(...counts);
-  counts.forEach((c,i)=>{
-    const d = document.createElement('div');
-    d.className = 'digit' + (c===max && ticks.length>20 ? ' hot' : '') + (c===min && ticks.length>20 ? ' cold' : '');
-    d.textContent = i + ' (' + c + ')';
-    box.appendChild(d);
-  });
-  let hottest = counts.indexOf(max);
-  let coldest = counts.indexOf(min);
-  const strat = document.getElementById('strategy').value;
-  let sug = '';
-  if(ticks.length >= 20){
-    if(strat==='MATCHES') sug = `💡 Suggestion: Digit <b>${hottest}</b> is HOTTEST (${max}x). Consider MATCHES ${hottest}`;
-    if(strat==='DIFFERS') sug = `💡 Suggestion: Digit <b>${coldest}</b> is COLDEST (${min}x). Consider DIFFERS ${coldest}`;
-    if(strat==='OVER') sug = `💡 Check OVER - Hottest is ${hottest}, Coldest is ${coldest}`;
-    if(strat==='UNDER') sug = `💡 Check UNDER - Hottest is ${hottest}, Coldest is ${coldest}`;
-    if(strat==='EVEN' || strat==='ODD'){
-      let even = counts.filter((_,i)=>i%2===0).reduce((a,b)=>a+b,0);
-      let odd = ticks.length - even;
-      sug = `💡 EVEN: ${even} | ODD: ${odd} - ${even>odd?'EVEN is leading':'ODD is leading'}`;
-    }
-    document.getElementById('analysis').textContent = `Analyzed ${ticks.length} ticks. Hottest: ${hottest} (${max}x) | Coldest: ${coldest} (${min}x)`;
-    document.getElementById('suggestion').innerHTML = sug;
-  } else {
-    document.getElementById('analysis').textContent = `Collecting ticks... ${ticks.length}/20 needed`;
-  }
-}
+
+// Auto-fill saved token if exists
+window.onload = () => {
+  const savedToken = localStorage.getItem('dee_token');
+  if(savedToken) document.getElementById('token').value = savedToken;
+  const savedApp = localStorage.getItem('dee_appid');
+  if(savedApp) document.getElementById('appId').value = savedApp;
+};
+
+// Save on input
+document.getElementById('token').addEventListener('input', (e)=>{
+  localStorage.setItem('dee_token', e.target.value);
+});
+document.getElementById('appId').addEventListener('input', (e)=>{
+  localStorage.setItem('dee_appid', e.target.value);
+});
 </script>
 </body>
 </html>
