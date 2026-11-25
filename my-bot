@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DEE BOT</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box;font-family:'Segoe UI',Arial,sans-serif}
+  body{background:#0f172a;color:white;padding:15px}
+  .container{max-width:900px;margin:0 auto}
+  .header{text-align:center;padding:20px;background:linear-gradient(135deg,#7c3aed,#db2777);border-radius:15px;margin-bottom:15px}
+  .header h1{font-size:28px;letter-spacing:1px}
+  .header p{opacity:0.9;margin-top:5px;font-size:14px}
+  .card{background:#1e293b;padding:18px;border-radius:12px;margin-bottom:15px;border:1px solid #334155}
+  .card h2{font-size:16px;margin-bottom:12px;color:#c4b5fd}
+  label{display:block;font-size:13px;margin:10px 0 5px;color:#cbd5e1}
+  input,select{width:100%;padding:12px;border-radius:8px;border:1px solid #475569;background:#0f172a;color:white;font-size:14px;outline:none}
+  input:focus{border-color:#a855f7}
+  .row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .btn{width:100%;padding:14px;border:none;border-radius:10px;background:linear-gradient(90deg,#7c3aed,#db2777);color:white;font-size:16px;font-weight:bold;cursor:pointer;margin-top:15px}
+  .btn:hover{opacity:0.9}
+  .btn-small{padding:10px;font-size:13px;margin-top:8px;background:#334155}
+  .status{text-align:center;padding:12px;border-radius:10px;background:#0f172a;border:1px solid #334155;margin-bottom:15px;font-size:14px}
+  .status b{color:#facc15}
+  .grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:15px}
+  .box{background:#1e293b;padding:15px;border-radius:12px;text-align:center;border:1px solid #334155}
+  .box small{color:#94a3b8;font-size:12px}
+  .box div{font-size:22px;font-weight:bold;margin-top:5px}
+  .green{color:#22c55e}.red{color:#ef4444}.yellow{color:#facc15}.purple{color:#c084fc}
+  .digits{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin:10px 0}
+  .digit{width:42px;height:42px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:bold;background:#334155;font-size:16px}
+  .digit.hot{background:#22c55e;color:white}
+  .digit.cold{background:#ef4444;color:white}
+  .log{background:#020617;padding:12px;border-radius:10px;height:180px;overflow-y:auto;font-family:monospace;font-size:12px;line-height:1.6}
+  .footer{text-align:center;font-size:12px;color:#64748b;margin-top:10px}
+  .help{font-size:12px;color:#94a3b8;margin-top:6px;line-height:1.5}
+  .help a{color:#c4b5fd}
+</style>
+</head>
+<body>
+<div class="container">
+
+  <div class="header">
+    <h1>🤖 DEE BOT</h1>
+    <p>DEE BOT - Personal Analyzer | Volatility 100 (1s) Index</p>
+  </div>
+
+  <div class="status" id="status">Status: <b>Not Connected</b> | Balance: <b id="balance">-</b></div>
+
+  <div class="card">
+    <h2>⚙️ Setup - Deriv Login</h2>
+    <label>Deriv API Token (Use DEMO first)</label>
+    <input type="password" id="token" placeholder="Paste Your Deriv API Token Here">
+    <div class="help">
+      How to get it: Go to <b>deriv.com</b> > Login > <b>Settings > API Token</b> > Create token > Copy it here.<br>
+      Tick: <b>Trade</b> + <b>Read</b> only for demo. Never share this token with anyone.
+    </div>
+    <div class="row">
+      <div>
+        <label>Volatility</label>
+        <select id="symbol">
+          <option value="R_100">Volatility 100 (1s) Index</option>
+          <option value="R_75">Volatility 75 (1s) Index</option>
+          <option value="R_50">Volatility 50 (1s) Index</option>
+          <option value="R_25">Volatility 25 (1s) Index</option>
+          <option value="R_10">Volatility 10 (1s) Index</option>
+        </select>
+      </div>
+      <div>
+        <label>Strategy</label>
+        <select id="strategy">
+          <option value="MATCHES">MATCHES</option>
+          <option value="DIFFERS">DIFFERS</option>
+          <option value="OVER">OVER</option>
+          <option value="UNDER">UNDER</option>
+          <option value="EVEN">EVEN</option>
+          <option value="ODD">ODD</option>
+        </select>
+      </div>
+    </div>
+    <div class="row">
+      <div>
+        <label>Stake (USD)</label>
+        <input type="number" id="stake" value="0.35" step="0.01">
+      </div>
+      <div>
+        <label>Barrier / Prediction (0-9)</label>
+        <input type="number" id="barrier" placeholder="e.g. 5 for OVER/UNDER" min="0" max="9">
+      </div>
+    </div>
+    <button class="btn" onclick="connect()">CONNECT & START ANALYSIS</button>
+    <button class="btn btn-small" onclick="clearToken()">Clear Saved Token</button>
+  </div>
+
+  <div class="grid">
+    <div class="box"><small>Last Price</small><div id="price" class="yellow">-</div></div>
+    <div class="box"><small>Last Digit</small><div id="lastDigit" class="purple">-</div></div>
+    <div class="box"><small>Total Ticks</small><div id="tickCount">0</div></div>
+  </div>
+
+  <div class="card">
+    <h2>📊 Last Digit Analysis (Last 100 Ticks)</h2>
+    <div class="digits" id="digits"></div>
+    <p style="font-size:13px;color:#cbd5e1;text-align:center" id="analysis">Waiting for ticks...</p>
+    <p style="font-size:13px;text-align:center;margin-top:8px" id="suggestion"></p>
+  </div>
+
+  <div class="card">
+    <h2>📜 Live Log</h2>
+    <div class="log" id="log"></div>
+  </div>
+
+  <div class="footer">DEE BOT • Made for you • Always test on DEMO first • Trading involves risk</div>
+</div>
+
+<script>
+let ws, ticks = [], counts = Array(10).fill(0);
+
+// Auto-load saved token
+window.onload = () => {
+  const saved = localStorage.getItem('dee_token');
+  if(saved){
+    document.getElementById('token').value = saved;
+    log('Saved token loaded. Click CONNECT to start.');
+  }
+};
+
+function log(msg){
+  const el = document.getElementById('log');
+  const d = document.createElement('div');
+  d.textContent = new Date().toLocaleTimeString() + ' - ' + msg;
+  el.prepend(d);
+}
+
+function clearToken(){
+  localStorage.removeItem('dee_token');
+  document.getElementById('token').value = '';
+  log('Saved token cleared.');
+}
+
+function connect(){
+  const token = document.getElementById('token').value.trim();
+  const symbol = document.getElementById('symbol').value;
+  if(!token){ alert('Please paste your Deriv API Token first'); return; }
+  localStorage.setItem('dee_token', token);
+  if(ws) ws.close();
+  ws = new WebSocket('wss://ws.derivws.com/websockets/v3?app_id=1089');
+  ws.onopen = () => {
+    log('Connected to Deriv...');
+    ws.send(JSON.stringify({authorize: token}));
+  };
+  ws.onmessage = (msg) => {
+    const data = JSON.parse(msg.data);
+    if(data.error){ log('Error: ' + data.error.message); document.getElementById('status').innerHTML = 'Status: <b style="color:#ef4444">Error - Check Token</b>'; return; }
+    if(data.authorize){
+      document.getElementById('status').innerHTML = 'Status: <b style="color:#22c55e">✅ Connected - Live</b> | Balance: <b>' + data.authorize.balance + ' ' + data.authorize.currency + '</b>';
+      log('Authorized as: ' + data.authorize.loginid);
+      ws.send(JSON.stringify({ticks: symbol, subscribe: 1}));
+      ws.send(JSON.stringify({balance: 1, subscribe: 1}));
+    }
+    if(data.balance){
+      document.getElementById('balance').textContent = data.balance.balance + ' ' + data.balance.currency;
+    }
+    if(data.tick){
+      handleTick(data.tick.quote);
+    }
+  };
+  ws.onerror = () => log('Connection error - check internet / use localhost not file://');
+}
+
+function handleTick(price){
+  const priceStr = price.toString();
+  const lastDigit = parseInt(priceStr[priceStr.length-1]);
+  if(isNaN(lastDigit)) return;
+  document.getElementById('price').textContent = price;
+  document.getElementById('lastDigit').textContent = lastDigit;
+  ticks.push(lastDigit);
+  if(ticks.length > 100) ticks.shift();
+  document.getElementById('tickCount').textContent = ticks.length;
+  counts = Array(10).fill(0);
+  ticks.forEach(d => counts[d]++);
+  updateDigits();
+}
+
+function updateDigits(){
+  const box = document.getElementById('digits');
+  box.innerHTML = '';
+  let max = Math.max(...counts);
+  let min = Math.min(...counts);
+  counts.forEach((c,i)=>{
+    const d = document.createElement('div');
+    d.className = 'digit' + (c===max && ticks.length>20 ? ' hot' : '') + (c===min && ticks.length>20 ? ' cold' : '');
+    d.textContent = i + ' (' + c + ')';
+    d.title = 'Digit ' + i + ' appeared ' + c + ' times';
+    box.appendChild(d);
+  });
+  let hottest = counts.indexOf(max);
+  let coldest = counts.indexOf(min);
+  const strat = document.getElementById('strategy').value;
+  let sug = '';
+  if(ticks.length >= 20){
+    if(strat==='MATCHES') sug = `💡 DEE BOT Suggestion: Digit <b>${hottest}</b> is HOTTEST (${max} times). Consider MATCHES ${hottest}`;
+    if(strat==='DIFFERS') sug = `💡 DEE BOT Suggestion: Digit <b>${coldest}</b> is COLDEST (${min} times). Consider DIFFERS ${coldest}`;
+    if(strat==='OVER') sug = `💡 DEE BOT Suggestion: Check OVER analysis - Hottest is ${hottest}, Coldest is ${coldest}`;
+    if(strat==='UNDER') sug = `💡 DEE BOT Suggestion: Check UNDER analysis - Hottest is ${hottest}, Coldest is ${coldest}`;
+    if(strat==='EVEN' || strat==='ODD'){
+      let even = counts.filter((_,i)=>i%2===0).reduce((a,b)=>a+b,0);
+      let odd = ticks.length - even;
+      sug = `💡 DEE BOT Suggestion: EVEN: ${even} | ODD: ${odd} - ${even>odd?'EVEN is leading':'ODD is leading'}`;
+    }
+    document.getElementById('analysis').textContent = `Analyzed ${ticks.length} ticks. Hottest: ${hottest} (${max}x) | Coldest: ${coldest} (${min}x)`;
+    document.getElementById('suggestion').innerHTML = sug;
+  } else {
+    document.getElementById('analysis').textContent = `Collecting ticks... ${ticks.length}/20 needed for analysis`;
+  }
+}
+</script>
+</body>
+</html>
