@@ -1,160 +1,107 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>DEE BOT - Deriv Trading Bot</title>
+<title>DEE BOT</title>
 <style>
-* { margin:0; padding:0; box-sizing:border-box; font-family: 'Segoe UI', sans-serif; }
-body { background: #0f0f1a; color: #fff; padding: 20px; }
-.container { max-width: 900px; margin: auto; }
-h1 { text-align:center; color:#ff2d78; margin-bottom: 5px; }
-.subtitle { text-align:center; color:#aaa; margin-bottom: 20px; }
-.card { background:#1a1a2e; border-radius:12px; padding:20px; margin-bottom:20px; border:1px solid #2a2a4a; }
-label { display:block; margin:10px 0 5px; color:#ccc; font-size:14px; }
-input, select { width:100%; padding:12px; border-radius:8px; border:1px solid #333; background:#0f0f1a; color:#fff; font-size:14px; }
-button { width:100%; padding:14px; border:none; border-radius:8px; background:#ff2d78; color:#fff; font-size:16px; font-weight:bold; cursor:pointer; margin-top:15px; }
-button:hover { background:#ff4d8f; }
-button:disabled { background:#555; cursor:not-allowed; }
-#status { text-align:center; padding:10px; border-radius:8px; margin:10px 0; font-weight:bold; }
-.connected { background:#0f5132; color:#75ffb0; }
-.disconnected { background:#5c1a1a; color:#ff8a8a; }
-#log { background:#000; padding:15px; border-radius:8px; height:250px; overflow-y:auto; font-family:monospace; font-size:12px; color:#0f0; white-space:pre-wrap; }
-.price { font-size:28px; text-align:center; color:#00e5ff; margin:10px 0; }
-.grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
-@media(max-width:600px){ .grid{ grid-template-columns:1fr; } }
+body{background:#0a0a0a;color:#fff;font-family:Arial;padding:20px;max-width:600px;margin:auto}
+h1{color:#00ff88;text-align:center}
+input,button{width:100%;padding:12px;margin:8px 0;border-radius:8px;border:none;font-size:16px;box-sizing:border-box}
+input{background:#222;color:#fff}
+button{background:#00ff88;color:#000;font-weight:bold;cursor:pointer}
+button:disabled{background:#555}
+#price{font-size:48px;text-align:center;margin:20px 0;color:#00ff88}
+#log{background:#111;padding:10px;height:220px;overflow:auto;font-size:13px;border-radius:8px;white-space:pre-wrap}
 </style>
 </head>
 <body>
-<div class="container">
 <h1>DEE BOT</h1>
-<p class="subtitle">Deriv Trading Bot - Live Analysis</p>
-
-<div class="card">
-<label>App ID</label>
-<input type="text" id="appId" value="353YmLl4HQoUW151xZbsE" placeholder="Enter App ID">
-<label>API Token</label>
-<input type="password" id="token" placeholder="Paste your Deriv API token">
-<div class="grid">
-<div>
-<label>Symbol</label>
-<select id="symbol">
-<option value="R_100">Volatility 100 Index</option>
-<option value="R_75">Volatility 75 Index</option>
-<option value="R_50">Volatility 50 Index</option>
-<option value="R_25">Volatility 25 Index</option>
-<option value="R_10">Volatility 10 Index</option>
-<option value="1HZ100V">Volatility 100 (1s)</option>
-<option value="1HZ75V">Volatility 75 (1s)</option>
-</select>
-</div>
-<div>
-<label>Stake ($)</label>
-<input type="number" id="stake" value="1" step="0.1" min="0.35">
-</div>
-</div>
-<button id="connectBtn" onclick="connect()">CONNECT & START ANALYSIS</button>
-<div id="status" class="disconnected">● Disconnected</div>
-<div class="price" id="price">--</div>
-</div>
-
-<div class="card">
-<label>Live Log</label>
-<div id="log">Waiting to connect...\n</div>
-</div>
-</div>
+<input id="appId" placeholder="App ID" value="353YmLl4HQoUW151xZbsE">
+<input id="token" placeholder="Paste Token" type="password">
+<button id="connectBtn" onclick="connect()">CONNECT</button>
+<button onclick="disconnect()" style="background:#ff4444;color:#fff">DISCONNECT</button>
+<div id="price">--</div>
+<div id="log">Ready. Click CONNECT.</div>
 
 <script>
-let ws = null;
-let isConnected = false;
+let ws=null;
+let endpoints=[
+  "wss://ws.derivws.com/websockets/v3?app_id=",
+  "wss://ws.binaryws.com/websockets/v3?app_id=",
+  "wss://ws.derivws.com/websockets/v3?app_id="
+];
+let currentEndpoint=0;
 
-function log(msg){
-  const el = document.getElementById('log');
-  const time = new Date().toLocaleTimeString();
-  el.textContent += `[${time}] ${msg}\n`;
-  el.scrollTop = el.scrollHeight;
+function log(msg){ 
+  const el=document.getElementById('log');
+  el.textContent += "\n"+new Date().toLocaleTimeString()+" - "+msg;
+  el.scrollTop=el.scrollHeight;
   console.log(msg);
 }
 
-function setStatus(connected, text){
-  const el = document.getElementById('status');
-  el.textContent = text;
-  el.className = connected ? 'connected' : 'disconnected';
-  document.getElementById('connectBtn').disabled = connected;
-}
-
 function connect(){
-  const appId = document.getElementById('appId').value.trim();
-  const token = document.getElementById('token').value.trim();
-  const symbol = document.getElementById('symbol').value;
+  const appId=document.getElementById('appId').value.trim();
+  const token=document.getElementById('token').value.trim();
+  if(!appId||!token){ log("Enter App ID and Token"); return; }
+  localStorage.setItem('dee_appId',appId);
+  localStorage.setItem('dee_token',token);
+  currentEndpoint=0;
+  tryConnect(appId,token);
+}
 
-  if(!appId){ log('❌ Please enter App ID'); return; }
-  if(!token){ log('❌ Please enter API Token'); return; }
-
-  log(`Connecting to Deriv with App ID: ${appId}`);
-  setStatus(false, '● Connecting...');
-
-  // FIXED: Using binaryws endpoint to avoid 520 error
-  ws = new WebSocket(`wss://ws.binaryws.com/websockets/v3?app_id=${appId}`);
-
-  ws.onopen = () => {
-    log('✅ WebSocket connected! Authorizing...');
-    ws.send(JSON.stringify({ authorize: token }));
+function tryConnect(appId,token){
+  if(ws){ try{ws.close()}catch(e){} }
+  const url=endpoints[currentEndpoint]+appId;
+  log("Trying endpoint "+(currentEndpoint+1)+": "+url);
+  document.getElementById('connectBtn').disabled=true;
+  ws=new WebSocket(url);
+  
+  ws.onopen=()=>{
+    log("Connected to endpoint "+(currentEndpoint+1));
+    ws.send(JSON.stringify({authorize:token}));
   };
-
-  ws.onmessage = (msg) => {
-    const data = JSON.parse(msg.data);
-
-    if(data.error){
-      log(`❌ Error: ${data.error.message} (code: ${data.error.code})`);
-      setStatus(false, '● Error - Check Token');
-      return;
+  ws.onmessage=(e)=>{
+    const data=JSON.parse(e.data);
+    if(data.msg_type==='authorize'){
+      if(data.error){ log("Auth error: "+data.error.message); return; }
+      log("Authorized: "+data.authorize.loginid);
+      ws.send(JSON.stringify({ticks:"R_100",subscribe:1}));
     }
-
-    if(data.msg_type === 'authorize'){
-      log(`✅ Authorized! Account: ${data.authorize.loginid} | Balance: ${data.authorize.balance} ${data.authorize.currency}`);
-      setStatus(true, '● Connected - Live');
-      isConnected = true;
-      // Subscribe to ticks
-      ws.send(JSON.stringify({ ticks: symbol, subscribe: 1 }));
-      log(`📈 Subscribed to ${symbol}`);
+    if(data.msg_type==='tick'){
+      document.getElementById('price').textContent=data.tick.quote;
     }
-
-    if(data.msg_type === 'tick'){
-      const price = data.tick.quote;
-      document.getElementById('price').textContent = price;
-      log(`💹 ${symbol}: ${price}`);
-    }
+    if(data.error){ log("Error: "+data.error.message); }
   };
-
-  ws.onerror = (e) => {
-    log('❌ Connection error - check internet / App ID');
-    console.error('WebSocket error:', e);
-    setStatus(false, '● Connection Error');
+  ws.onerror=()=>{
+    log("WebSocket error on endpoint "+(currentEndpoint+1));
   };
-
-  ws.onclose = (e) => {
-    log(`⚠️ Connection closed (code: ${e.code})`);
-    setStatus(false, '● Disconnected');
-    isConnected = false;
+  ws.onclose=(e)=>{
+    log("Closed (code "+e.code+") on endpoint "+(currentEndpoint+1));
+    document.getElementById('connectBtn').disabled=false;
+    if(currentEndpoint < endpoints.length-1){
+      currentEndpoint++;
+      log("Trying next endpoint...");
+      setTimeout(()=>tryConnect(appId,token),1000);
+    } else {
+      log("All endpoints failed. Try VPN or wait 10 mins.");
+    }
   };
 }
 
-// Auto-fill saved token if exists
-window.onload = () => {
-  const savedToken = localStorage.getItem('dee_token');
-  if(savedToken) document.getElementById('token').value = savedToken;
-  const savedApp = localStorage.getItem('dee_appid');
-  if(savedApp) document.getElementById('appId').value = savedApp;
-};
+function disconnect(){
+  if(ws) ws.close();
+  log("Disconnected");
+  document.getElementById('connectBtn').disabled=false;
+}
 
-// Save on input
-document.getElementById('token').addEventListener('input', (e)=>{
-  localStorage.setItem('dee_token', e.target.value);
-});
-document.getElementById('appId').addEventListener('input', (e)=>{
-  localStorage.setItem('dee_appid', e.target.value);
-});
+window.onload=()=>{
+  const savedApp=localStorage.getItem('dee_appId');
+  const savedToken=localStorage.getItem('dee_token');
+  if(savedApp) document.getElementById('appId').value=savedApp;
+  if(savedToken) document.getElementById('token').value=savedToken;
+  if(savedApp && savedToken) log("Loaded saved App ID & Token. Click CONNECT.");
+};
 </script>
 </body>
 </html>
